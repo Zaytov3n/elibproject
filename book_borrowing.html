@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Borrowing</title>
+</head>
+<body>
+  <h1>Book Borrowing</h1>
+  <div>
+    <label for="bookId">Book ID:</label>
+    <input type="text" id="bookId">
+    <button onclick="borrowBook()">Borrow Book</button>
+  </div>
+
+  <script>
+    // Function to borrow a book
+    async function borrowBook() {
+      const bookId = document.getElementById('bookId').value;
+
+      try {
+        const response = await fetch('/borrow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ bookId })
+        });
+        const data = await response.json();
+        console.log(data);
+        alert(data.message); // Show success message
+      } catch (error) {
+        console.error('Error borrowing book:', error);
+        alert('An error occurred while borrowing the book. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>

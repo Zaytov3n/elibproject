@@ -1,0 +1,52 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'search' // Replace with your MySQL database name
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+});
+
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+
+// Route to handle book search
+app.get('/books', (req, res) => {
+  let { title, author, category } = req.query;
+  title = title ? `%${title}%` : '%';
+  author = author ? `%${author}%` : '%';
+  category = category ? `%${category}%` : '%';
+
+  const sql = 'SELECT * FROM books WHERE title LIKE ? AND author LIKE ? AND category LIKE ?';
+  db.query(sql, [title, author, category], (err, results) => {
+    if (err) {
+      console.error('Error searching for books:', err);
+      res.status(500).json({ message: 'An error occurred while searching for books' });
+    } else {
+      console.log('Books found:', results);
+      res.status(200).json(results);
+    }
+  });
+});
+
+// Serve the HTML file
+app.use(express.static('public'));
+
+// Start the Express server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

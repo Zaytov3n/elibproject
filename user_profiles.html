@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+</head>
+<body>
+  <h1>User Profile</h1>
+  <div id="userInfo"></div>
+  <div id="borrowingHistory"></div>
+
+  <script>
+    // Function to fetch user profile information from the backend API
+    async function fetchUserProfile() {
+      try {
+        const response = await fetch('/profile');
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    }
+
+    // Function to fetch user borrowing history from the backend API
+    async function fetchBorrowingHistory() {
+      try {
+        const response = await fetch('/borrowing-history');
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Error fetching borrowing history:', error);
+      }
+    }
+
+    // Function to render user profile information on the page
+    async function renderUserProfile() {
+      const userInfoContainer = document.getElementById('userInfo');
+      const borrowingHistoryContainer = document.getElementById('borrowingHistory');
+      userInfoContainer.innerHTML = ''; // Clear previous content
+      borrowingHistoryContainer.innerHTML = ''; // Clear previous content
+
+      const userProfile = await fetchUserProfile();
+      if (userProfile) {
+        // Display user information
+        const usernameElement = document.createElement('p');
+        usernameElement.textContent = `Username: ${userProfile.username}`;
+        userInfoContainer.appendChild(usernameElement);
+
+        // Form to update user information
+        const updateForm = document.createElement('form');
+        updateForm.innerHTML = `
+          <input type="text" id="newUsername" placeholder="New Username">
+          <input type="password" id="newPassword" placeholder="New Password">
+          <button type="button" onclick="updateUserInfo()">Update</button>
+        `;
+        userInfoContainer.appendChild(updateForm);
+      } else {
+        userInfoContainer.textContent = 'User profile not found';
+      }
+
+      // Display borrowing history
+      const borrowingHistory = await fetchBorrowingHistory();
+      if (borrowingHistory) {
+        const historyTitle = document.createElement('h2');
+        historyTitle.textContent = 'Borrowing History';
+        borrowingHistoryContainer.appendChild(historyTitle);
+
+        const historyList = document.createElement('ul');
+        borrowingHistory.forEach(item => {
+          const listItem = document.createElement('li');
+          listItem.textContent = item.title; // Assuming each borrowing history item has a title property
+          historyList.appendChild(listItem);
+        });
+        borrowingHistoryContainer.appendChild(historyList);
+      } else {
+        borrowingHistoryContainer.textContent = 'Borrowing history not found';
+      }
+    }
+
+    // Function to update user information
+    async function updateUserInfo() {
+      const newUsername = document.getElementById('newUsername').value;
+      const newPassword = document.getElementById('newPassword').value;
+
+      try {
+        const response = await fetch('/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: newUsername,
+            password: newPassword
+          })
+        });
+        const data = await response.json();
+        console.log(data);
+        // Refresh user profile after updating
+        renderUserProfile();
+      } catch (error) {
+        console.error('Error updating user information:', error);
+      }
+    }
+
+    // Render user profile when the page loads
+    renderUserProfile();
+  </script>
+</body>
+</html>

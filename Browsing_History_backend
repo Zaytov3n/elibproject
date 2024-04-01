@@ -1,0 +1,69 @@
+const express = require('express');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+
+  // Create database and tables
+  db.query('CREATE DATABASE IF NOT EXISTS browsing_history', (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log('Database created or already exists');
+    db.query('USE browsing_history', (err) => {
+      if (err) {
+        throw err;
+      }
+      console.log('Using database: browsing_history');
+      db.query(`CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL
+      )`, (err) => {
+        if (err) {
+          throw err;
+        }
+        console.log('Users table created or already exists');
+      });
+    });
+  });
+});
+
+// Route to handle login
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Perform query to check if the user exists in MySQL database
+  const sql = `SELECT * FROM users WHERE username = ? AND password = ?`;
+  db.query(sql, [username, password], (err, result) => {
+    if (err) {
+      console.error('Error during login:', err);
+      res.status(500).json({ message: 'An error occurred during login' });
+    } else {
+      if (result.length > 0) {
+        res.status(200).json({ message: 'Login successful' });
+      } else {
+        res.status(401).json({ message: 'Invalid username or password' });
+      }
+    }
+  });
+});
+
+// Start the Express server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

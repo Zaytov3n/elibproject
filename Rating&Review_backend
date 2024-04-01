@@ -1,0 +1,47 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'rating_reviews' // Use the rating_reviews database
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+});
+
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+
+// Route to add review to the database
+app.post('/add-review', (req, res) => {
+  const { review, rating } = req.body;
+
+  // Insert review into the 'reviews' table
+  const sql = 'INSERT INTO reviews (review, rating) VALUES (?, ?)';
+  db.query(sql, [review, rating], (err, result) => {
+    if (err) {
+      console.error('Error adding review:', err);
+      res.status(500).json({ message: 'An error occurred while adding the review to the database' });
+    } else {
+      console.log('Review added to the database');
+      res.status(200).json({ message: 'Review added successfully' });
+    }
+  });
+});
+
+// Start the Express server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

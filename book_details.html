@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Details</title>
+</head>
+<body>
+  <h1>Book Details</h1>
+  <div id="bookDetails"></div>
+
+  <script>
+    // Function to fetch book details by ID from the backend API
+    async function fetchBookDetails(bookId) {
+      try {
+        const response = await fetch(`/books/${bookId}`);
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Error fetching book details:', error);
+      }
+    }
+
+    // Function to render book details on the page
+    async function renderBookDetails(bookId) {
+      const bookDetailsContainer = document.getElementById('bookDetails');
+      bookDetailsContainer.innerHTML = ''; // Clear previous content
+
+      const bookDetails = await fetchBookDetails(bookId);
+
+      if (bookDetails) {
+        const bookTitle = document.createElement('h2');
+        bookTitle.textContent = bookDetails.title;
+        bookDetailsContainer.appendChild(bookTitle);
+
+        const bookAuthor = document.createElement('p');
+        bookAuthor.textContent = `Author: ${bookDetails.author}`;
+        bookDetailsContainer.appendChild(bookAuthor);
+
+        const bookCategory = document.createElement('p');
+        bookCategory.textContent = `Category: ${bookDetails.category}`;
+        bookDetailsContainer.appendChild(bookCategory);
+
+        const bookDescription = document.createElement('p');
+        bookDescription.textContent = `Description: ${bookDetails.description}`;
+        bookDetailsContainer.appendChild(bookDescription);
+
+        // You can add more elements for cover image, availability status, etc.
+      } else {
+        const errorMessage = document.createElement('p');
+        errorMessage.textContent = 'Book not found';
+        bookDetailsContainer.appendChild(errorMessage);
+      }
+    }
+
+    // Call the renderBookDetails function with a specific book ID (replace with actual book ID)
+    const bookId = '123456789'; 
+    renderBookDetails(bookId);
+  </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+const express = require('express');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+
+  // Create database and tables
+  db.query('CREATE DATABASE IF NOT EXISTS your_database_name', (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log('Database created or already exists');
+    db.query('USE your_database_name', (err) => {
+      if (err) {
+        throw err;
+      }
+      console.log('Using database: your_database_name');
+      db.query(`CREATE TABLE IF NOT EXISTS books (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(255) NOT NULL,
+        borrowed BOOLEAN DEFAULT false
+      )`, (err) => {
+        if (err) {
+          throw err;
+        }
+        console.log('Books table created or already exists');
+      });
+    });
+  });
+});
+
+// Route to borrow a book
+app.post('/borrow', (req, res) => {
+  const bookId = req.body.bookId; // Assuming you're sending bookId in the request body
+
+  // Perform borrowing logic here, e.g., updating database, checking availability, etc.
+  // Example: Update database table to mark the book as borrowed
+  const sql = `UPDATE books SET borrowed = true WHERE id = ${bookId}`;
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('Error borrowing book:', err);
+      res.status(500).json({ message: 'An error occurred while borrowing the book.' });
+    } else {
+      console.log('Book borrowed successfully');
+      res.json({ message: 'Book borrowed successfully' });
+    }
+  });
+});
+
+// Start the Express server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

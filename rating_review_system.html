@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Review</title>
+</head>
+<body>
+  <h1>Add Review</h1>
+  <div>
+    <label for="review">Review:</label>
+    <textarea id="review" rows="4" cols="50"></textarea>
+  </div>
+  <div>
+    <label for="rating">Rating:</label>
+    <select id="rating">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
+  </div>
+  <div>
+    <button onclick="addReview()">Submit Review</button>
+  </div>
+
+  <script>
+    // Function to add review for a book
+    async function addReview() {
+      const review = document.getElementById('review').value;
+      const rating = document.getElementById('rating').value;
+      const bookId = '609d54c0fa81db001e7e4c02'; // Replace with the actual book ID
+
+      try {
+        const response = await fetch(`/books/${bookId}/reviews`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ review, rating })
+        });
+        const data = await response.json();
+        console.log(data);
+        alert(data.message); // Show success message
+      } catch (error) {
+        console.error('Error adding review:', error);
+        alert('An error occurred while adding the review. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>

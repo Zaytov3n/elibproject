@@ -1,0 +1,128 @@
+const express = require('express');
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcrypt');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'User Authentication'
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+});
+
+// Middleware for parsing request body
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// Middleware for session management
+app.use(session({ secret: 'secret', resave: false, saveUninitialized: false }));
+
+// Initialize Passport and session
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport local strategy for username/password authentication
+passport.use(new LocalStrategy(async (username, password, done) => {
+  try {
+    const sql = 'SELECT * FROM users WHERE username = ?';
+    db.query(sql, [username], async (err, results) => {
+      if (err) {
+        return done(err);
+      }
+      if (results.length === 0) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      const user = results[0];
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+      return done(null, user);
+    });
+  } catch (err) {
+    return done(err);
+  }
+}));
+
+// Serialize user object into session
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+// Deserialize user object from session
+passport.deserializeUser((id, done) => {
+  const sql = 'SELECT * FROM users WHERE id = ?';
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      return done(err);
+    }
+    const user = results[0];
+    done(null, user);
+  });
+});
+
+// Route for the root path
+app.get('/', (req, res) => {
+  res.send('Welcome to the e-library app!');
+});
+
+// Route for user registration
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const sql = 'INSERT INTO users (username, password) VALUES (?, ?)';
+    db.query(sql, [username, hashedPassword], (err) => {
+      if (err) {
+        return res.status(500).json({ message: err.message });
+      }
+      res.status(201).json({ message: 'User registered successfully.' });
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Route for user login
+app.post('/login', passport.authenticate('local'), (req, res) => {
+  res.status(200).json({ message: 'Login successful.' });
+});
+
+// Route for user logout
+app.get('/logout', (req, res) => {
+  req.logout();
+  res.status(200).json({ message: 'Logout successful.' });
+});
+
+// Middleware for protecting routes that require authentication
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: 'Unauthorized. Please log in.' });
+}
+
+// Example protected route
+app.get('/profile', isAuthenticated, (req, res) => {
+  res.status(200).json({ user: req.user });
+});
+
+// Start server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});

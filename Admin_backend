@@ -1,0 +1,82 @@
+const express = require('express');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+
+  // Create database and tables
+  db.query('CREATE DATABASE IF NOT EXISTS my_library', (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log('Database created or already exists');
+    db.query('USE my_library', (err) => {
+      if (err) {
+        throw err;
+      }
+      console.log('Using database: my_library');
+      db.query(`CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL
+      )`, (err) => {
+        if (err) {
+          throw err;
+        }
+        console.log('Users table created or already exists');
+      });
+      db.query(`CREATE TABLE IF NOT EXISTS books (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(255) NOT NULL,
+        category VARCHAR(255) NOT NULL
+      )`, (err) => {
+        if (err) {
+          throw err;
+        }
+        console.log('Books table created or already exists');
+      });
+    });
+  });
+});
+
+// Route to fetch users from MySQL database
+app.get('/users', (req, res) => {
+  const sql = 'SELECT * FROM users';
+  db.query(sql, (err, results) => {
+    if (err) {
+      throw err;
+    }
+    res.json(results);
+  });
+});
+
+// Route to fetch books from MySQL database
+app.get('/books', (req, res) => {
+  const sql = 'SELECT * FROM books';
+  db.query(sql, (err, results) => {
+    if (err) {
+      throw err;
+    }
+    res.json(results);
+  });
+});
+
+// Start the Express server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

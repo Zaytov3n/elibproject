@@ -1,0 +1,77 @@
+const express = require('express');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+
+  // Create database and tables
+  db.query('CREATE DATABASE IF NOT EXISTS book_details', (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log('Database created or already exists');
+    db.query('USE book_details', (err) => {
+      if (err) {
+        throw err;
+      }
+      console.log('Using database: book_details');
+      db.query(`CREATE TABLE IF NOT EXISTS books (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(255) NOT NULL,
+        category VARCHAR(255) NOT NULL,
+        description TEXT
+      )`, (err) => {
+        if (err) {
+          throw err;
+        }
+        console.log('Books table created or already exists');
+      });
+    });
+  });
+});
+
+// Route to fetch book details by ID
+app.get('/books/:id', (req, res) => {
+  const bookId = req.params.id;
+
+  // Perform query to fetch book details from MySQL database
+  const sql = `SELECT * FROM books WHERE id = ${bookId}`;
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('Error fetching book details:', err);
+      res.status(500).json({ error: 'An error occurred while fetching book details' });
+    } else {
+      if (result.length > 0) {
+        const bookDetails = result[0];
+        res.json({
+          title: bookDetails.title,
+          author: bookDetails.author,
+          category: bookDetails.category,
+          description: bookDetails.description
+        });
+      } else {
+        res.status(404).json({ error: 'Book not found' });
+      }
+    }
+  });
+});
+
+// Start the Express server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

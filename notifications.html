@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Library</title>
+</head>
+<body>
+
+<h1>Welcome to the E-Library</h1>
+
+<form id="notificationForm">
+  <label for="email">Recipient Email:</label><br>
+  <input type="email" id="email" name="email" required><br>
+  <label for="message">Message:</label><br>
+  <textarea id="message" name="message" required></textarea><br>
+  <button type="submit">Send Notification</button>
+</form>
+
+<div id="notificationResult"></div>
+
+<script>
+document.getElementById("notificationForm").addEventListener("submit", async function(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById("email").value;
+  const message = document.getElementById("message").value;
+  
+  try {
+    const response = await fetch('/send-notification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, message })
+    });
+    
+    const data = await response.json();
+    document.getElementById("notificationResult").textContent = data.message;
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    document.getElementById("notificationResult").textContent = 'Failed to send notification';
+  }
+});
+</script>
+
+</body>
+</html>

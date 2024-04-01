@@ -1,0 +1,128 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcrypt');
+const mysql = require('mysql');
+const nodemailer = require('nodemailer');
+
+// Create MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'notifications' // Change database name as needed
+});
+
+// Connect to MySQL server
+db.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  console.log('Connected to MySQL server');
+  
+  // Create notifications table if not exists
+  const createNotificationsTable = `
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL
+    )
+  `;
+  db.query(createNotificationsTable, (err, result) => {
+    if (err) {
+      throw err;
+    }
+    console.log('Notifications table created or exists');
+  });
+});
+
+// Set up Express app
+const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(session({ secret: 'secret', resave: false, saveUninitialized: false }));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport local strategy for username/password authentication
+passport.use(new LocalStrategy(async (username, password, done) => {
+  try {
+    const sql = 'SELECT * FROM users WHERE username = ?';
+    db.query(sql, [username], async (err, results) => {
+      if (err) {
+        return done(err);
+      }
+      if (results.length === 0) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      const user = results[0];
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+      return done(null, user);
+    });
+  } catch (err) {
+    return done(err);
+  }
+}));
+
+// Serialize user object into session
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+// Deserialize user object from session
+passport.deserializeUser((id, done) => {
+  const sql = 'SELECT * FROM users WHERE id = ?';
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      return done(err);
+    }
+    const user = results[0];
+    done(null, user);
+  });
+});
+
+// Route to send email notification
+app.post('/send-notification', async (req, res) => {
+  try {
+    const { email, message } = req.body;
+
+    // Create reusable transporter object using the default SMTP transport
+    let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'your_email@gmail.com', // Replace with your email
+        pass: 'your_password' // Replace with your password
+      }
+    });
+
+    // Send mail with defined transport object
+    let info = await transporter.sendMail({
+      from: '"E-Library Notifications" <your_email@gmail.com>', // Sender address
+      to: email, // List of receivers
+      subject: 'E-Library Notification', // Subject line
+      text: message // Plain text body
+    });
+
+    console.log('Message sent: %s', info.messageId);
+    res.json({ message: 'Notification sent successfully' });
+  } catch (err) {
+    console.error('Error sending email:', err);
+    res.status(500).json({ message: 'Failed to send notification' });
+  }
+});
+
+// Route handler for the root path
+app.get('/', (req, res) => {
+  res.send('Welcome to the e-library!');
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
